@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ChatService } from './chat.service';
-import { ClerkAuthGuard } from '../auth/clerk.guard';
 import { DynamoService } from 'src/dynamo/dynamo.service';
 
 interface AuthenticatedRequest extends Request {
@@ -46,7 +45,6 @@ export class ChatController {
 
   // MESSAGE OPERATIONS
   @Post('stream')
-  @UseGuards(ClerkAuthGuard)
   async chatStream(
     @Req() request: AuthenticatedRequest,
     @Body() chatPromptDto: ChatPromptDto,
@@ -94,7 +92,6 @@ export class ChatController {
   }
 
 @Get(':chatId/history')
-  @UseGuards(ClerkAuthGuard)
   async getChatHistory(
     @Req() request: AuthenticatedRequest,
     @Param('chatId') chatId: string,
@@ -108,7 +105,6 @@ export class ChatController {
 
   //CHAT MANAGEMENT
   @Post('create')
-  @UseGuards(ClerkAuthGuard)
   async createChat(
     @Req() request:AuthenticatedRequest,
     @Body() dto:createChatDto
@@ -124,7 +120,6 @@ export class ChatController {
   }
 
   @Get('list')
-  @UseGuards(ClerkAuthGuard)
   async getUserChats(
     @Req()request:AuthenticatedRequest
   ){
@@ -135,7 +130,6 @@ export class ChatController {
   }
 
   @Get(':chatId')
-  @UseGuards(ClerkAuthGuard)
   async getChat(
     @Req() request: AuthenticatedRequest,
     @Param('chatId') chatId: string,
@@ -151,7 +145,6 @@ export class ChatController {
   }
 
   @Put(':chatId/title')
-  @UseGuards(ClerkAuthGuard)
   async updateChatTitle(
     @Req() request: AuthenticatedRequest,
     @Param('chatId') chatId: string,
@@ -164,7 +157,6 @@ export class ChatController {
   }
 
   @Delete(':chatId')
-  @UseGuards(ClerkAuthGuard)
   async deleteChat(
     @Req() request: AuthenticatedRequest,
     @Param('chatId') chatId: string,
