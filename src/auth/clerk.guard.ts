@@ -14,14 +14,12 @@ export class ClerkAuthGuard implements CanActivate {
     }
 
     try {
-      // Verify the token with Clerk
       const claims = await clerkClient.verifyToken(sessionToken);
       if (!claims) {
         throw new UnauthorizedException('Invalid token.');
       }
-      // Attach the verified user ID to the request
       request.auth = { userId: claims.sub };
-      return true;
+      return true; 
     } catch (error) {
       console.error('Clerk token verification failed:', error);
       throw new UnauthorizedException('Invalid token.');
