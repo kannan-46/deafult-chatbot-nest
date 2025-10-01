@@ -1,6 +1,6 @@
 // src/dynamo/dynamo.service.ts
 import { Injectable } from '@nestjs/common';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient,DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
   PutCommand,
@@ -45,23 +45,47 @@ export interface Gpt {
   createdAt: string;
   isPublic: boolean;
 }
-
 @Injectable()
 export class DynamoService {
   private readonly client: DynamoDBDocumentClient;
-  private readonly messageTableName = 'chatMessages';
+ private readonly messageTableName: string;
+constructor() {
+   if (!process.env.CONNECTIONS_TABLE_NAME) {
+      throw new Error("Missing DYNAMODB_TABLE environment variable");
+    }
+    this.messageTableName = process.env.CONNECTIONS_TABLE_NAME;
 
-  constructor() {
-    const client = new DynamoDBClient({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  const clientConfig: DynamoDBClientConfig = {
+    region: process.env.AWS_REGION || 'ap-south-1',
+
+  };
+  const client = new DynamoDBClient(clientConfig);
+  this.client = DynamoDBDocumentClient.from(client);
+}
+
+  async saveConnection(connectionId: string): Promise<void> {
+    const command = new PutCommand({
+      TableName: this.messageTableName,
+      Item: {
+        PK: `CONN#${connectionId}`,
+        SK: `CONN#${connectionId}`,
+        connectionId: connectionId,
+        createdAt: new Date().toISOString(),
       },
     });
-    this.client = DynamoDBDocumentClient.from(client);
+    await this.client.send(command);
   }
 
+  async deleteConnection(connectionId: string): Promise<void> {
+    const command = new DeleteCommand({
+      TableName: this.messageTableName,
+      Key: {
+        PK: `CONN#${connectionId}`,
+        SK: `CONN#${connectionId}`,
+      },
+    });
+    await this.client.send(command);
+  }
   // CHAT
 
   async createChat(userId: string, title: string | 'New Chat'): Promise<Chat> {
@@ -79,7 +103,7 @@ export class DynamoService {
 
     await this.client.send(
       new PutCommand({
-        TableName: this.messageTableName,
+        TableName:this.messageTableName,
         Item: {
           PK: userId,
           SK: `CHAT#${chatId}`,
@@ -272,7 +296,7 @@ export class DynamoService {
 
     await this.client.send(
       new UpdateCommand({
-        TableName: this.messageTableName,
+        TableName:this.messageTableName,
         Key: {
           PK: userId,
           SK: `CHAT#${chatId}`,

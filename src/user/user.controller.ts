@@ -3,7 +3,6 @@
 import { Body, Controller, Param, Put, Get, Post, UseGuards, Req } from '@nestjs/common'; 
 import  { DynamoService,type userProfile} from 'src/dynamo/dynamo.service'; 
 // import { GeminiService } from 'src/gemini/gemini.service';
-import { ClerkAuthGuard } from 'src/auth/clerk.guard';
 import type { Request } from 'express';
 
 interface AuthenticatedRequest extends Request {
@@ -11,7 +10,6 @@ interface AuthenticatedRequest extends Request {
 }
 
 @Controller('users') 
-@UseGuards(ClerkAuthGuard) 
 export class UserController {
   constructor(
     private readonly dynamoService: DynamoService,

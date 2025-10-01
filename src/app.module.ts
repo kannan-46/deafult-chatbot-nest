@@ -7,6 +7,7 @@ import { DynamoModule } from './dynamo/dynamo.module';
 import { UserModule } from './user/user.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { GptsModule } from './gpts/gpts.module';
+import { WebSocketModule } from './websocket/websocket.module'
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { GptsModule } from './gpts/gpts.module';
     UserModule,
     CloudinaryModule,
     GptsModule,
+    WebSocketModule
   ],
   providers: [CloudinaryModule],
 })

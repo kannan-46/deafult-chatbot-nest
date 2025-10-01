@@ -1,0 +1,4 @@
+# Exclude files and folders that don't need to be deployed
+.git
+.env
+README.md

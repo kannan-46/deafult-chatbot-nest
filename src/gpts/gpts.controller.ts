@@ -10,7 +10,6 @@ import {
   Param,
   Res,
 } from '@nestjs/common';
-import { ClerkAuthGuard } from '../auth/clerk.guard';
 import { GptsService } from './gpts.service';
 import type { Response } from 'express';
 
@@ -36,7 +35,6 @@ export class GptsController {
   constructor(private readonly gptsService: GptsService) {}
 
   @Post('stream')
-  @UseGuards(ClerkAuthGuard)
   async gptChatStream(
     @Req() request: any,
     @Body() gptPromptDto: gptPromptDto,
@@ -72,7 +70,6 @@ export class GptsController {
     }
   }
   @Post('create')
-  @UseGuards(ClerkAuthGuard)
   async createGpt(
     @Req() request: AuthenticatedRequest,
     @Body() createGptDto: CreateGptDto,
@@ -88,7 +85,6 @@ export class GptsController {
     return { gpts };
   }
   @Get('my')
-  @UseGuards(ClerkAuthGuard)
   async getMyGpts(@Req() request: AuthenticatedRequest) {
     const userId = request.auth.userId;
     const gpts = await this.gptsService.getUserGpts(userId);
@@ -96,7 +92,6 @@ export class GptsController {
   }
 
   @Get(':gptId')
-  @UseGuards(ClerkAuthGuard)
   async getGpt(
     @Req() request: AuthenticatedRequest,
     @Param('gptId') gptId: string,
