@@ -113,7 +113,7 @@ Return only the title text, 3–5 words, Title Case, no punctuation, no quotes, 
       const titleStream = this.gemini.generateTextStream(
         prompt,
         [],
-        'gemini-1.5-flash-latest',
+        'gemini-2.5-pro',
         0.3,
         userId,
         false,

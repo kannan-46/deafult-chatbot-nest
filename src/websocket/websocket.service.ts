@@ -44,12 +44,12 @@ async handleMessage(connectionId:string,body:any){
       case 'sendMessage':{
           const userId = body.userId ?? 'user123'; 
           const chatId = body.chatId;
-          const model = body.model || 'gemini-1.5-flash';
+          const model = body.model || 'gemini-2.5-pro';
           const temperature = body.temperature ?? 0.7;
           const webSearch = !!body.webSearch;
           const systemInstruction = body.systemInstruction;
 
-          const messageId=`${Date.now()}-${Math.random().toString(36).slice(2)}`
+          const messageId=`${new Date().toISOString()}`
           await this.sendJson(connectionId,{type:'streamStart',messageId})
 
           let fullText=''
