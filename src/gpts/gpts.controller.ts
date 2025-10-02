@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { GptsService } from './gpts.service';
 import type { Response } from 'express';
+import { DevAuthGuard } from 'src/dev-auth.guard'
 
 interface AuthenticatedRequest extends Request {
   auth: { userId: string };
@@ -31,6 +32,7 @@ class gptPromptDto {
 }
 
 @Controller('gpts')
+@UseGuards(DevAuthGuard)
 export class GptsController {
   constructor(private readonly gptsService: GptsService) {}
 

@@ -53,7 +53,7 @@ export class GeminiService {
         : [];
 
       const model = this.genAi.getGenerativeModel({
-        model: modelName,
+        model: 'gemini-2.5-pro',
         generationConfig: { temperature },
         tools,
         systemInstruction: finalSystemInstruction, // Use the final chosen instruction

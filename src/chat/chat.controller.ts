@@ -15,6 +15,7 @@ import {
 import type { Request, Response } from 'express';
 import { ChatService } from './chat.service';
 import { DynamoService } from 'src/dynamo/dynamo.service';
+import { DevAuthGuard } from 'src/dev-auth.guard';
 
 interface AuthenticatedRequest extends Request {
   auth: { userId: string };
@@ -34,6 +35,7 @@ class createChatDto{
 }
 
 @Controller('chat')
+@UseGuards(DevAuthGuard)
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
 

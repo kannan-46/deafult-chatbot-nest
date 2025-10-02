@@ -63,13 +63,14 @@ constructor() {
   this.client = DynamoDBDocumentClient.from(client);
 }
 
-  async saveConnection(connectionId: string): Promise<void> {
+  async saveConnection(connectionId: string,userId:string): Promise<void> {
     const command = new PutCommand({
       TableName: this.messageTableName,
       Item: {
         PK: `CONN#${connectionId}`,
         SK: `CONN#${connectionId}`,
         connectionId: connectionId,
+        userId:userId,
         createdAt: new Date().toISOString(),
       },
     });

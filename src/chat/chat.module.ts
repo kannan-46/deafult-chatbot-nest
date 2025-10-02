@@ -8,5 +8,6 @@ import { DynamoModule } from 'src/dynamo/dynamo.module';
   imports: [GeminiModule, DynamoModule],
   controllers: [ChatController],
   providers: [ChatService],
+  exports:[ChatService]
 })
 export class ChatModule {}

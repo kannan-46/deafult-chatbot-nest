@@ -22,17 +22,20 @@ export const handler = async (event: any) => {
   try {
     switch (routeKey) {
       case '$connect':
-        await webSocketService.handleConnect(connectionId);
+      const userId = event.queryStringParameters?.userId ?? 'anonymous';        
+      await webSocketService.handleConnect(connectionId,userId);
+      return {statusCode:200}
         break;
       case '$disconnect':
-        await webSocketService.handleDisconnect(connectionId);
-        break;
-      case '$default':
-        await webSocketService.handleMessage(connectionId, event.body);
-        break;
+        await webSocketService.handleDisconnect(connectionId);        
+        return {stausCode:200}
+    default: {
+      const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+      await webSocketService.handleMessage(connectionId, body);
+      return { statusCode: 200 };
     }
-    return { statusCode: 200 };
-  } catch (err) {
+  } 
+}catch (err) {
     console.error(err);
     return { statusCode: 500 };
   }
