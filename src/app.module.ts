@@ -8,6 +8,7 @@ import { UserModule } from './user/user.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { GptsModule } from './gpts/gpts.module';
 import { WebSocketModule } from './websocket/websocket.module'
+import { GroupChatModule } from './group-chat/group-chat.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { WebSocketModule } from './websocket/websocket.module'
     UserModule,
     CloudinaryModule,
     GptsModule,
-    WebSocketModule
+    WebSocketModule,
+    GroupChatModule
   ],
   providers: [CloudinaryModule],
 })

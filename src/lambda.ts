@@ -1,3 +1,4 @@
+// src/lambda.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { WebSocketService } from './websocket/websocket.service';
@@ -21,22 +22,28 @@ export const handler = async (event: any) => {
 
   try {
     switch (routeKey) {
-      case '$connect':
-      const userId = event.queryStringParameters?.userId ?? 'anonymous';        
-      await webSocketService.handleConnect(connectionId,userId);
-      return {statusCode:200}
-        break;
-      case '$disconnect':
-        await webSocketService.handleDisconnect(connectionId);        
-        return {stausCode:200}
-    default: {
-      const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-      await webSocketService.handleMessage(connectionId, body);
-      return { statusCode: 200 };
+      case '$connect': { 
+        const userId = event.queryStringParameters?.userId ?? 'anonymous';
+        console.log(`[Lambda] $connect event for userId: ${userId}`);
+
+        await webSocketService.handleConnect(connectionId, userId);
+        
+        return { statusCode: 200 };
+      }
+      case '$disconnect': {
+        await webSocketService.handleDisconnect(connectionId);
+        console.log(`[Lambda] $disconnect event for connectionId: ${connectionId}`);
+        return { statusCode: 200 };
+      }
+      default: {
+        const body =
+          typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+        await webSocketService.handleMessage(connectionId, body);
+        return { statusCode: 200 };
+      }
     }
-  } 
-}catch (err) {
-    console.error(err);
+  } catch (err) {
+    console.error('Error in Lambda handler:', err);
     return { statusCode: 500 };
   }
 };

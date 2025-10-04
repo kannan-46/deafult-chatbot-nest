@@ -2,13 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { DynamoService } from 'src/dynamo/dynamo.service'; // Use the central DynamoService
 import { ApiGatewayManagementApiClient, PostToConnectionCommand } from '@aws-sdk/client-apigatewaymanagementapi';
 import { ChatService } from 'src/chat/chat.service';
+import { GroupChatService } from 'src/group-chat/group-chat.service';
 
 @Injectable()
 export class WebSocketService {
   private readonly apiGatewayClient: ApiGatewayManagementApiClient;
 
   // Inject the DynamoService instead of creating a new client
-  constructor(private readonly dynamoService: DynamoService,private readonly chat:ChatService) {
+  constructor(private readonly dynamoService: DynamoService,private readonly chat:ChatService,private readonly groupChat:GroupChatService) {
     this.apiGatewayClient = new ApiGatewayManagementApiClient({
       endpoint: process.env.WEBSOCKET_API_ENDPOINT,
     });
@@ -18,6 +19,20 @@ export class WebSocketService {
     const data=Buffer.from(JSON.stringify(payload))
     await this.apiGatewayClient.send(new PostToConnectionCommand({ConnectionId:connectionId,Data:data}))
   }
+
+async broadcastToConnections(connectionIds:string[],payload:any):Promise<void>{
+  const data=Buffer.from(JSON.stringify(payload))
+  const postCalls=connectionIds.map(id=>
+    this.apiGatewayClient.send(new PostToConnectionCommand({ConnectionId:id,Data:data}))
+    .catch(err=>{
+       if (err.statusCode === 410) {
+            console.log(`Found stale connection, deleting: ${id}`);
+            return this.dynamoService.deleteConnection(id);
+          }
+    })
+  )
+  await Promise.allSettled(postCalls)
+}
 
   // Use the injected service to handle database operations
   async handleConnect(connectionId: string,userId:string): Promise<void> {
@@ -43,7 +58,7 @@ async handleMessage(connectionId:string,body:any){
 
       case 'sendMessage':{
           const userId = body.userId ?? 'user123'; 
-          const chatId = body.chatId;
+          const chatId = body.chatId ?? 'chat 1'
           const model = body.model || 'gemini-2.5-pro';
           const temperature = body.temperature ?? 0.7;
           const webSearch = !!body.webSearch;
@@ -77,6 +92,22 @@ async handleMessage(connectionId:string,body:any){
             }
           })
           return
+      }
+
+      case 'joinGroup':{
+        const {userId,groupId}=body
+        if(userId && groupId){
+          await this.groupChat.handleJoinGroup(userId,groupId)
+        }
+        return
+      }
+
+      case 'sendGroupMessage':{
+        const {userId,groupId,message}=body
+        if(userId&&groupId&&message){
+          await this.groupChat.handleSendGroupMessage(userId,groupId,message)
+        }
+        return
       }
       default:{
            await this.sendJson(connectionId, { type: 'error', message: `Unknown action: ${action}` });
