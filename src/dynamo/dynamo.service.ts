@@ -8,6 +8,7 @@ import {
   GetCommand,
   UpdateCommand,
   DeleteCommand,
+  ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuid } from 'uuid';
 
@@ -425,4 +426,28 @@ constructor() {
      const results = await Promise.all(queries);
     return results.flatMap(result => (result.Items as { connectionId: string }[]) || []);
   }
+
+  async getConnections(connectionId:string):Promise<{connectionId:string,userId:string}|null>{
+    const res=await this.client.send(new GetCommand({
+      TableName:this.messageTableName,
+      Key:{
+        PK:`CONN#${connectionId}`,
+        SK:`CONN#${connectionId}`
+      }
+    }))
+    return res.Item as {connectionId:string,userId:string}|null
+  }
+
+  async getAllConnections(): Promise<{ connectionId: string; userId: string }[]> {
+    const command = new ScanCommand({
+      TableName: this.messageTableName,
+      FilterExpression: 'begins_with(PK, :pk)',
+      ExpressionAttributeValues: {
+        ':pk': 'CONN#',
+      },
+    });
+    const result = await this.client.send(command);
+    return (result.Items as { connectionId: string; userId: string }[]) || [];
+  }
 }
+
