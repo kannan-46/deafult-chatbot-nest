@@ -50,17 +50,20 @@ export class WebSocketService {
     await this.dynamoService.saveConnection(connectionId, userId);
     console.log(`User connected: ${userId} with connectionId: ${connectionId}`);
 
-    const allOtherConnections = (await this.dynamoService.getAllConnections())
-        .filter(c => c.connectionId !== connectionId);
+    const allOtherConnections = (
+      await this.dynamoService.getAllConnections()
+    ).filter((c) => c.connectionId !== connectionId);
 
     const newUserPayload = {
       type: 'userJoined',
       user: { id: userId, name: userId },
     };
-    
+
     if (allOtherConnections.length > 0) {
-        const recipientConnectionIds = allOtherConnections.map(c => c.connectionId);
-        await this.broadcastToConnections(recipientConnectionIds, newUserPayload);
+      const recipientConnectionIds = allOtherConnections.map(
+        (c) => c.connectionId,
+      );
+      await this.broadcastToConnections(recipientConnectionIds, newUserPayload);
     }
   }
 
@@ -181,14 +184,17 @@ export class WebSocketService {
           return;
         }
 
-            case 'requestPresenceState': {
-            const allConnections = await this.dynamoService.getAllConnections();
-            const userListPayload = {
-                type: 'presenceState',
-                users: allConnections.map(c => ({ id: c.userId, name: c.userId })),
-            };
-            await this.sendJson(connectionId, userListPayload);
-            return;
+        case 'requestPresenceState': {
+          const allConnections = await this.dynamoService.getAllConnections();
+          const userListPayload = {
+            type: 'presenceState',
+            users: allConnections.map((c) => ({
+              id: c.userId,
+              name: c.userId,
+            })),
+          };
+          await this.sendJson(connectionId, userListPayload);
+          return;
         }
         default: {
           await this.sendJson(connectionId, {
