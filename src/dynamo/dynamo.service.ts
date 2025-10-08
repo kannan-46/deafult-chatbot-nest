@@ -11,6 +11,7 @@ import {
   ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuid } from 'uuid';
+import { repl } from '@nestjs/core';
 
 export interface userProfile {
   name?: string;
@@ -399,16 +400,21 @@ export class DynamoService {
     groupId: string,
     fromUserId: string,
     message: string,
+    replyTo?:string
   ): Promise<void> {
     const now = new Date().toISOString();
-    const command = new PutCommand({
-      TableName: this.messageTableName,
-      Item: {
-        PK: `GROUP#${groupId}`,
+    const item:any={
+       PK: `GROUP#${groupId}`,
         SK: `MSG#${now}`,
         fromUserId,
         message,
-      },
+    }
+    if(replyTo){
+      item.replyTo=replyTo
+    }
+    const command = new PutCommand({
+      TableName: this.messageTableName,
+      Item: item
     });
     await this.client.send(command);
   }

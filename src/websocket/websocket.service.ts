@@ -193,6 +193,13 @@ export class WebSocketService {
           await this.sendJson(connectionId, userListPayload);
           return;
         }
+
+        case 'replyToGroupMessage':{
+          const {userId,groupId,message,replyTo}=body
+          if(userId&&groupId&&message&&replyTo){
+            await this.groupChat.handleReplyToGroup(userId,groupId,message,replyTo)
+          }
+        }
         default: {
           await this.sendJson(connectionId, {
             type: 'error',

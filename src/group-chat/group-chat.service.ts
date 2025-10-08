@@ -1,5 +1,6 @@
 // src/group-chat/group-chat.service.ts
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { timestamp } from 'rxjs';
 import { DynamoService } from 'src/dynamo/dynamo.service';
 import { WebSocketService } from 'src/websocket/websocket.service';
 
@@ -78,5 +79,21 @@ export class GroupChatService {
       timestamp: new Date().toISOString(),
     };
     await this.broadcastToGroup(fromUserId, groupId, payload);
+  }
+
+  async handleReplyToGroup(fromUserId:string,groupId:string,message:string,replyTo:string):Promise<void>{
+    console.log(
+      `[GroupChatService] User ${fromUserId} replying to message ${replyTo} in group ${groupId}`,
+    );
+    await this.dynamo.saveGroupMessage(groupId,fromUserId,message,replyTo)
+    const payload={
+      type:'groupMessage',
+      groupId,
+      fromUserId,
+      message,
+      replyTo,
+      timestamp:new Date().toISOString()
+    }
+    await this.broadcastToGroup(fromUserId,groupId,payload)
   }
 }
