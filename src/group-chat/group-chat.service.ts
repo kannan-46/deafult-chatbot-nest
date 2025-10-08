@@ -16,7 +16,9 @@ export class GroupChatService {
     groupId: string,
     payload: any,
   ): Promise<void> {
+    // get users in group
     const users = await this.dynamo.getUsersInGroup(groupId);
+
     const recipientUserIds = users
       .map((u) => u.userId)
       .filter((id) => id !== fromUserId);
@@ -69,31 +71,65 @@ export class GroupChatService {
     console.log(
       `[GroupChatService] User ${fromUserId} sending message to group ${groupId}`,
     );
-    await this.dynamo.saveGroupMessage(groupId, fromUserId, message);
+    const messageTimestamp=new Date().toISOString()
+    await this.dynamo.saveGroupMessage(groupId, fromUserId, message,undefined,messageTimestamp);
     console.log(`[GroupChatService] message saved to DB`);
     const payload = {
       type: 'groupMessage',
       groupId,
       fromUserId,
       message,
-      timestamp: new Date().toISOString(),
+      timestamp: messageTimestamp,
+      reactions:{}
     };
-    await this.broadcastToGroup(fromUserId, groupId, payload);
+    await this.broadcastToGroup('null', groupId, payload);
   }
 
-  async handleReplyToGroup(fromUserId:string,groupId:string,message:string,replyTo:string):Promise<void>{
+  async handleReplyToGroup(
+    fromUserId: string,
+    groupId: string,
+    message: string,
+    replyTo: string,
+  ): Promise<void> {
     console.log(
       `[GroupChatService] User ${fromUserId} replying to message ${replyTo} in group ${groupId}`,
     );
-    await this.dynamo.saveGroupMessage(groupId,fromUserId,message,replyTo)
-    const payload={
-      type:'groupMessage',
+    const messageTimestamp=new Date().toISOString()
+    await this.dynamo.saveGroupMessage(groupId, fromUserId, message, replyTo);
+    const payload = {
+      type: 'groupMessage',
       groupId,
       fromUserId,
       message,
       replyTo,
-      timestamp:new Date().toISOString()
-    }
-    await this.broadcastToGroup(fromUserId,groupId,payload)
+      timestamp: messageTimestamp,
+      reactions:{}
+    };
+    await this.broadcastToGroup('null', groupId, payload);
+  }
+
+  async handleReactToMessage(
+    fromUserId: string,
+    groupId: string,
+    messageTimestamp: string,
+    reaction: string,
+  ): Promise<void> {
+    console.log(
+      `[GroupChatService] User ${fromUserId} reacting to message ${messageTimestamp} with ${reaction}`,
+    );
+
+    const updateMessage = await this.dynamo.toggleReaction(
+      groupId,
+      messageTimestamp,
+      fromUserId,
+      reaction,
+    );
+    const payload = {
+      type: 'messageReactionUpdate',
+      groupId,
+      messageTimestamp,
+      reactions: updateMessage.reactions,
+    };
+    await this.broadcastToGroup('null', groupId, payload);
   }
 }

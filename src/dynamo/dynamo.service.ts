@@ -400,21 +400,23 @@ export class DynamoService {
     groupId: string,
     fromUserId: string,
     message: string,
-    replyTo?:string
+    replyTo?: string,
+    timestamp?: string,
   ): Promise<void> {
-    const now = new Date().toISOString();
-    const item:any={
-       PK: `GROUP#${groupId}`,
-        SK: `MSG#${now}`,
-        fromUserId,
-        message,
-    }
-    if(replyTo){
-      item.replyTo=replyTo
+    const now = timestamp || new Date().toISOString();
+    const item: any = {
+      PK: `GROUP#${groupId}`,
+      SK: `MSG#${now}`,
+      fromUserId,
+      message,
+      reactions: {},
+    };
+    if (replyTo) {
+      item.replyTo = replyTo;
     }
     const command = new PutCommand({
       TableName: this.messageTableName,
-      Item: item
+      Item: item,
     });
     await this.client.send(command);
   }
@@ -479,5 +481,80 @@ export class DynamoService {
         avatar: string;
       }[]) || []
     );
+  }
+
+  async toggleReaction(
+    groupId: string,
+    messageTimestamp: string,
+    userId: string,
+    reaction: string,
+  ): Promise<any> {
+    const messageSK = `MSG#${messageTimestamp}`;
+    const tableKey = { PK: `GROUP#${groupId}`, SK: messageSK };
+
+    // New log statement
+    console.log(`[DynamoService] Toggling reaction for message:`, tableKey);
+
+    try {
+      // Step 1: Get the current message
+      const getCommand = new GetCommand({
+        TableName: this.messageTableName,
+        Key: tableKey,
+      });
+      const { Item } = await this.client.send(getCommand);
+
+      if (!Item) {
+        console.error(
+          `[DynamoService] ERROR: Message not found with SK: ${messageSK}`,
+        );
+        throw new Error('Message not found');
+      }
+
+      // New log statement
+      console.log(
+        `[DynamoService] Found item. Current reactions:`,
+        JSON.stringify(Item.reactions || {}),
+      );
+
+      // Step 2: Modify the reactions map
+      const reactions = Item.reactions || {};
+      const usersForReaction = reactions[reaction] || [];
+      const userIndex = usersForReaction.indexOf(userId);
+
+      if (userIndex > -1) {
+        usersForReaction.splice(userIndex, 1); // Remove user
+      } else {
+        usersForReaction.push(userId); // Add user
+      }
+
+      if (usersForReaction.length === 0) {
+        delete reactions[reaction];
+      } else {
+        reactions[reaction] = usersForReaction;
+      }
+
+      // New log statement
+      console.log(
+        `[DynamoService] Updating item with new reactions:`,
+        JSON.stringify(reactions),
+      );
+
+      // Step 3: Update the item in DynamoDB
+      const updateCommand = new UpdateCommand({
+        TableName: this.messageTableName,
+        Key: tableKey,
+        UpdateExpression: 'SET reactions = :reactions',
+        ExpressionAttributeValues: { ':reactions': reactions },
+        ReturnValues: 'ALL_NEW',
+      });
+
+      const result = await this.client.send(updateCommand);
+      console.log(`[DynamoService] Successfully updated reactions.`);
+      return result.Attributes;
+    } catch (error) {
+      // This will catch any error (like permissions) and log it clearly
+      console.error(`[DynamoService] FATAL ERROR in toggleReaction:`, error);
+      throw error; // Stop execution and report the error
+    }
   }
 }

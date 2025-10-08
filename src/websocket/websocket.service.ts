@@ -80,6 +80,7 @@ export class WebSocketService {
   }
 
   async handleMessage(connectionId: string, body: any) {
+    
     try {
       const action = body?.action;
       switch (action) {
@@ -194,11 +195,29 @@ export class WebSocketService {
           return;
         }
 
-        case 'replyToGroupMessage':{
-          const {userId,groupId,message,replyTo}=body
-          if(userId&&groupId&&message&&replyTo){
-            await this.groupChat.handleReplyToGroup(userId,groupId,message,replyTo)
+        case 'replyToGroupMessage': {
+          const { userId, groupId, message, replyTo } = body;
+          if (userId && groupId && message && replyTo) {
+            await this.groupChat.handleReplyToGroup(
+              userId,
+              groupId,
+              message,
+              replyTo,
+            );
           }
+        }
+
+        case 'reactToMessage': {
+          const { userId, groupId, messageTimestamp, reaction } = body;
+          if (userId && groupId && messageTimestamp && reaction) {
+            await this.groupChat.handleReactToMessage(
+              userId,
+              groupId,
+              messageTimestamp,
+              reaction,
+            );
+          }
+          return;
         }
         default: {
           await this.sendJson(connectionId, {
