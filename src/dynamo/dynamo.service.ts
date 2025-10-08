@@ -1,6 +1,6 @@
 // src/dynamo/dynamo.service.ts
 import { Injectable } from '@nestjs/common';
-import { DynamoDBClient,DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
   PutCommand,
@@ -49,21 +49,20 @@ export interface Gpt {
 @Injectable()
 export class DynamoService {
   private readonly client: DynamoDBDocumentClient;
- private readonly messageTableName: string;
-constructor() {
-   if (!process.env.CONNECTIONS_TABLE_NAME) {
-      throw new Error("Missing DYNAMODB_TABLE environment variable");
+  private readonly messageTableName: string;
+  private readonly CONNECTIONS = 'CONNECTIONS';
+  constructor() {
+    if (!process.env.CONNECTIONS_TABLE_NAME) {
+      throw new Error('Missing DYNAMODB_TABLE environment variable');
     }
     this.messageTableName = process.env.CONNECTIONS_TABLE_NAME;
 
-  const clientConfig: DynamoDBClientConfig = {
-    region: process.env.AWS_REGION || 'ap-south-1',
-
-  };
-  const client = new DynamoDBClient(clientConfig);
-  this.client = DynamoDBDocumentClient.from(client);
-}
-
+    const clientConfig: DynamoDBClientConfig = {
+      region: process.env.AWS_REGION || 'ap-south-1',
+    };
+    const client = new DynamoDBClient(clientConfig);
+    this.client = DynamoDBDocumentClient.from(client);
+  }
 
   // CHAT
 
@@ -82,7 +81,7 @@ constructor() {
 
     await this.client.send(
       new PutCommand({
-        TableName:this.messageTableName,
+        TableName: this.messageTableName,
         Item: {
           PK: userId,
           SK: `CHAT#${chatId}`,
@@ -275,7 +274,7 @@ constructor() {
 
     await this.client.send(
       new UpdateCommand({
-        TableName:this.messageTableName,
+        TableName: this.messageTableName,
         Key: {
           PK: userId,
           SK: `CHAT#${chatId}`,
@@ -337,18 +336,22 @@ constructor() {
     return res.Item as userProfile | null;
   }
 
-
   //connections
-  async saveConnection(connectionId: string,userId:string): Promise<void> {
+  async saveConnection(
+    connectionId: string,
+    user: { id: string; name: string; avatar: string },
+  ): Promise<void> {
     const command = new PutCommand({
       TableName: this.messageTableName,
       Item: {
-        PK: `CONN#${connectionId}`,
+        PK: this.CONNECTIONS,
         SK: `CONN#${connectionId}`,
-        GSI1PK:`USER#${userId}`,
-        GSI1SK:`CONN#${connectionId}`,
+        GSI1PK: `USER#${user.id}`,
+        GSI1SK: `CONN#${connectionId}`,
         connectionId: connectionId,
-        userId:userId,
+        userId: user.id,
+        name: user.name,
+        avatar: user.avatar,
         createdAt: new Date().toISOString(),
       },
     });
@@ -359,95 +362,116 @@ constructor() {
     const command = new DeleteCommand({
       TableName: this.messageTableName,
       Key: {
-        PK: `CONN#${connectionId}`,
+        PK: this.CONNECTIONS,
         SK: `CONN#${connectionId}`,
       },
     });
     await this.client.send(command);
   }
 
-  async addUserToGroup(userId:string,groupId:string):Promise<void>{
-    const command=new PutCommand({
-      TableName:this.messageTableName,
-      Item:{
-        PK:`GROUP#${groupId}`,
-        SK:`USER#${userId}`,
-        userId,
-        joinedAt:new Date().toISOString()
-      }
-    })
-    await this.client.send(command)
-  }
-
-  async getUsersInGroup(groupId:string):Promise<{userId:string}[]>{
-    const command=new QueryCommand({
-      TableName:this.messageTableName,
-      KeyConditionExpression:'PK = :pk AND begins_with(SK, :sk)',
-      ExpressionAttributeValues:{
-        ':pk':`GROUP#${groupId}`,
-        ':sk':`USER#`
-      }
-    })
-    const result=await this.client.send(command)
-    return (result.Items as {userId:string}[])||[]
-  }
-
-  async saveMessageGroup(groupId:string,fromUserId:string,message:string):Promise<void>{
-    const now=new Date().toISOString()
-    const command=new PutCommand({
-      TableName:this.messageTableName,
-      Item:{
-        PK:`GROUP#${groupId}`,
-        SK:`MSG#${now}`,
-        fromUserId,
-        message
-      }
-    })
-    await this.client.send(command)
-  }
-
-  async findConnectionForUsers(userIds:string[]):Promise<{connectionId:string}[]>{
-    if(userIds.length===0){
-      return[]
-    }
-
-    const queries=userIds.map(userId=>{
-      const command=new QueryCommand({
-        TableName:this.messageTableName,
-        IndexName:'GSI1',
-        KeyConditionExpression:'GSI1PK = :pk',
-        ExpressionAttributeValues:{
-          ':pk':`USER#${userId}`
-        }
-      })
-      return this.client.send(command)
-    })
-
-     const results = await Promise.all(queries);
-    return results.flatMap(result => (result.Items as { connectionId: string }[]) || []);
-  }
-
-  async getConnections(connectionId:string):Promise<{connectionId:string,userId:string}|null>{
-    const res=await this.client.send(new GetCommand({
-      TableName:this.messageTableName,
-      Key:{
-        PK:`CONN#${connectionId}`,
-        SK:`CONN#${connectionId}`
-      }
-    }))
-    return res.Item as {connectionId:string,userId:string}|null
-  }
-
-  async getAllConnections(): Promise<{ connectionId: string; userId: string }[]> {
-    const command = new ScanCommand({
+  async addUserToGroup(userId: string, groupId: string): Promise<void> {
+    const command = new PutCommand({
       TableName: this.messageTableName,
-      FilterExpression: 'begins_with(PK, :pk)',
+      Item: {
+        PK: `GROUP#${groupId}`,
+        SK: `USER#${userId}`,
+        userId,
+        joinedAt: new Date().toISOString(),
+      },
+    });
+    await this.client.send(command);
+  }
+
+  async getUsersInGroup(groupId: string): Promise<{ userId: string }[]> {
+    const command = new QueryCommand({
+      TableName: this.messageTableName,
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
       ExpressionAttributeValues: {
-        ':pk': 'CONN#',
+        ':pk': `GROUP#${groupId}`,
+        ':sk': `USER#`,
       },
     });
     const result = await this.client.send(command);
-    return (result.Items as { connectionId: string; userId: string }[]) || [];
+    return (result.Items as { userId: string }[]) || [];
+  }
+
+  async saveGroupMessage(
+    groupId: string,
+    fromUserId: string,
+    message: string,
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    const command = new PutCommand({
+      TableName: this.messageTableName,
+      Item: {
+        PK: `GROUP#${groupId}`,
+        SK: `MSG#${now}`,
+        fromUserId,
+        message,
+      },
+    });
+    await this.client.send(command);
+  }
+
+  async findConnectionForUsers(
+    userIds: string[],
+  ): Promise<{ connectionId: string }[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const queries = userIds.map((userId) => {
+      const command = new QueryCommand({
+        TableName: this.messageTableName,
+        IndexName: 'GSI1',
+        KeyConditionExpression: 'GSI1PK = :pk',
+        ExpressionAttributeValues: {
+          ':pk': `USER#${userId}`,
+        },
+      });
+      return this.client.send(command);
+    });
+
+    const results = await Promise.all(queries);
+    return results.flatMap(
+      (result) => (result.Items as { connectionId: string }[]) || [],
+    );
+  }
+
+  async getConnections(
+    connectionId: string,
+  ): Promise<{ connectionId: string; userId: string } | null> {
+    const res = await this.client.send(
+      new GetCommand({
+        TableName: this.messageTableName,
+        Key: {
+          PK: this.CONNECTIONS,
+          SK: `CONN#${connectionId}`,
+        },
+      }),
+    );
+    return res.Item as { connectionId: string; userId: string } | null;
+  }
+
+  async getAllConnections(): Promise<
+    { connectionId: string; userId: string; name: string; avatar: string }[]
+  > {
+    const command = new QueryCommand({
+      TableName: this.messageTableName,
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+      ExpressionAttributeValues: {
+        ':pk': this.CONNECTIONS,
+        ':sk': 'CONN#',
+      },
+    });
+    const res = await this.client.send(command);
+    return (
+      (res.Items as {
+        connectionId: string;
+        userId: string;
+        name: string;
+        avatar: string;
+      }[]) || []
+    );
   }
 }
-

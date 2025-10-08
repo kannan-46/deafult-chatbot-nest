@@ -68,7 +68,7 @@ export class GroupChatService {
     console.log(
       `[GroupChatService] User ${fromUserId} sending message to group ${groupId}`,
     );
-    await this.dynamo.saveMessageGroup(groupId, fromUserId, message);
+    await this.dynamo.saveGroupMessage(groupId, fromUserId, message);
     console.log(`[GroupChatService] message saved to DB`);
     const payload = {
       type: 'groupMessage',

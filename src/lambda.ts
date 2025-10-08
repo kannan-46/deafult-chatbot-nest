@@ -22,17 +22,25 @@ export const handler = async (event: any) => {
 
   try {
     switch (routeKey) {
-      case '$connect': { 
-        const userId = event.queryStringParameters?.userId ?? 'anonymous';
-        console.log(`[Lambda] $connect event for userId: ${userId}`);
-
-        await webSocketService.handleConnect(connectionId, userId);
-        
+      case '$connect': {
+        let user = { id: 'anonymous', name: 'anonymous', avatar: '' };
+        if (event.queryStringParameters?.userInfo) {
+          try {
+            user = JSON.parse(
+              decodeURIComponent(event.queryStringParameters.userInfo),
+            );
+          } catch (error) {
+            console.error('failed to parse user info on connect', error);
+          }
+        }
+        await webSocketService.handleConnect(connectionId, user);
         return { statusCode: 200 };
       }
       case '$disconnect': {
         await webSocketService.handleDisconnect(connectionId);
-        console.log(`[Lambda] $disconnect event for connectionId: ${connectionId}`);
+        console.log(
+          `[Lambda] $disconnect event for connectionId: ${connectionId}`,
+        );
         return { statusCode: 200 };
       }
       default: {
