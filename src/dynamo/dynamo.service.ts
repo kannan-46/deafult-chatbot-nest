@@ -460,9 +460,7 @@ export class DynamoService {
     return res.Item as { connectionId: string; userId: string } | null;
   }
 
-  async getAllConnections(): Promise<
-    { connectionId: string; userId: string; name: string; avatar: string }[]
-  > {
+  async getAllConnections(): Promise<{ connectionId: string; userId: string; name: string; avatar: string }[]> {
     const command = new QueryCommand({
       TableName: this.messageTableName,
       KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
