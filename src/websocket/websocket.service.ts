@@ -234,6 +234,13 @@ export class WebSocketService {
           }
           return;
         }
+
+        case 'markAsRead':{
+          const {userId,groupId,messageTimestamp}=body
+          if(userId&&groupId&&messageTimestamp){
+            await this.groupChat.handleMarkAsRead(userId,groupId,messageTimestamp)
+          }
+        }
         default: {
           await this.sendJson(connectionId, {
             type: 'error',

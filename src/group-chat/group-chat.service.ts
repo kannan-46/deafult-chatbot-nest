@@ -168,4 +168,16 @@ export class GroupChatService {
     };
     await this.broadcastToGroup('null', groupId, payload);
   }
+
+  async handleMarkAsRead(userId:string,groupId:string,messageTimestamp:string){
+    await this.dynamo.updateLastRead(userId,groupId,messageTimestamp)
+    const seenBy=await this.dynamo.seenBy(groupId,messageTimestamp)
+    const payload={
+      type:'readReceiptUpdate',
+      groupId,
+      messageTimestamp,
+      seenBy
+    }
+    await this.broadcastToGroup(userId,groupId,payload)
+  }
 }

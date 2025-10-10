@@ -11,7 +11,6 @@ import {
   ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuid } from 'uuid';
-import { repl } from '@nestjs/core';
 
 export interface userProfile {
   name?: string;
@@ -482,7 +481,7 @@ export class DynamoService {
       }[]) || []
     );
   }
-
+  //reactions
   async toggleReaction(
     groupId: string,
     messageTimestamp: string,
@@ -557,7 +556,7 @@ export class DynamoService {
       throw error; // Stop execution and report the error
     }
   }
-
+  //pinning
   async getPinnedMessage(groupId: string): Promise<any> {
     console.log('getting pinned message');
     try {
@@ -612,5 +611,40 @@ export class DynamoService {
     } catch (error) {
       console.error('error in unpinning message');
     }
+  }
+
+  //read receipts
+
+  async updateLastRead(
+    userId: string,
+    groupId: string,
+    messageTimestamp: string,
+  ) {
+    await this.client.send(
+      new PutCommand({
+        TableName: this.messageTableName,
+        Item: {
+          PK: `GROUP#${groupId}`,
+          SK: `READSTATE#${userId}`,
+          lastRead: messageTimestamp,
+        },
+      }),
+    );
+  }
+
+  async seenBy(groupId: string, messageTimestamp: string) {
+    const res = await this.client.send(
+      new QueryCommand({
+        TableName: this.messageTableName,
+        KeyConditionExpression: 'PK = :pk and begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': `GROUP#${groupId}`,
+          ':sk': 'READSTATE#',
+        },
+      }),
+    );
+    return res.Items?.filter((i) => i.lastRead >= messageTimestamp).map((i) =>
+      i.SK.split('#')[1]
+    ).filter(Boolean) as string[]||[]
   }
 }
