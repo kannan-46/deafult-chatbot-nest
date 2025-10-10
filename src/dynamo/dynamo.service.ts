@@ -557,4 +557,60 @@ export class DynamoService {
       throw error; // Stop execution and report the error
     }
   }
+
+  async getPinnedMessage(groupId: string): Promise<any> {
+    console.log('getting pinned message');
+    try {
+      const res = await this.client.send(
+        new GetCommand({
+          TableName: this.messageTableName,
+          Key: {
+            PK: `GROUP#${groupId}`,
+            SK: 'PINNED_MESSAGE',
+          },
+        }),
+      );
+      return res.Item;
+    } catch (error) {
+      console.error('error in getting pinned message', error);
+    }
+  }
+
+  async pinMessage(groupId: string, message: any): Promise<void> {
+    console.log('pinning message');
+
+    try {
+      await this.client.send(
+        new PutCommand({
+          TableName: this.messageTableName,
+          Item: {
+            PK: `GROUP#${groupId}`,
+            SK: 'PINNED_MESSAGE',
+            pinnedMessage: message,
+            pinnedAt: new Date().toISOString(),
+          },
+        }),
+      );
+    } catch (error) {
+      console.error('error in pin message', error);
+    }
+  }
+
+  async unpinMessage(groupId: string): Promise<void> {
+    console.log('unpinning message');
+
+    try {
+      const res = await this.client.send(
+        new DeleteCommand({
+          TableName: this.messageTableName,
+          Key: {
+            PK: `GROUP#${groupId}`,
+            SK: 'PINNED_MESSAGE',
+          },
+        }),
+      );
+    } catch (error) {
+      console.error('error in unpinning message');
+    }
+  }
 }

@@ -58,9 +58,22 @@ export class GroupChatService {
     await this.broadcastToGroup(fromUserId, groupId, payload);
   }
 
-  async handleJoinGroup(userId: string, groupId: string): Promise<void> {
+  async handleJoinGroup(
+    userId: string,
+    groupId: string,
+    connectionId: string,
+  ): Promise<void> {
     await this.dynamo.addUserToGroup(userId, groupId);
     console.log(`[GroupChatService] User ${userId} joined group ${groupId}`);
+
+    const pinnedMessage = await this.dynamo.getPinnedMessage(groupId);
+    if (pinnedMessage) {
+      const payload = {
+        type: 'messagePinned',
+        pinnedMessage,
+      };
+      await this.ws.sendJson(connectionId, payload);
+    }
   }
 
   async handleSendGroupMessage(
@@ -71,8 +84,14 @@ export class GroupChatService {
     console.log(
       `[GroupChatService] User ${fromUserId} sending message to group ${groupId}`,
     );
-    const messageTimestamp=new Date().toISOString()
-    await this.dynamo.saveGroupMessage(groupId, fromUserId, message,undefined,messageTimestamp);
+    const messageTimestamp = new Date().toISOString();
+    await this.dynamo.saveGroupMessage(
+      groupId,
+      fromUserId,
+      message,
+      undefined,
+      messageTimestamp,
+    );
     console.log(`[GroupChatService] message saved to DB`);
     const payload = {
       type: 'groupMessage',
@@ -80,7 +99,7 @@ export class GroupChatService {
       fromUserId,
       message,
       timestamp: messageTimestamp,
-      reactions:{}
+      reactions: {},
     };
     await this.broadcastToGroup('null', groupId, payload);
   }
@@ -94,7 +113,7 @@ export class GroupChatService {
     console.log(
       `[GroupChatService] User ${fromUserId} replying to message ${replyTo} in group ${groupId}`,
     );
-    const messageTimestamp=new Date().toISOString()
+    const messageTimestamp = new Date().toISOString();
     await this.dynamo.saveGroupMessage(groupId, fromUserId, message, replyTo);
     const payload = {
       type: 'groupMessage',
@@ -103,7 +122,7 @@ export class GroupChatService {
       message,
       replyTo,
       timestamp: messageTimestamp,
-      reactions:{}
+      reactions: {},
     };
     await this.broadcastToGroup('null', groupId, payload);
   }
@@ -129,6 +148,23 @@ export class GroupChatService {
       groupId,
       messageTimestamp,
       reactions: updateMessage.reactions,
+    };
+    await this.broadcastToGroup('null', groupId, payload);
+  }
+
+  async handlePinMessage(groupId: string, message: any): Promise<any> {
+    await this.dynamo.pinMessage(groupId, message);
+    const payload = {
+      type: 'messagePinned',
+      pinnedMessage: message,
+    };
+    await this.broadcastToGroup('null', groupId, payload);
+  }
+
+  async handleUnPinMessage(groupId: string): Promise<void> {
+    await this.dynamo.unpinMessage(groupId);
+    const payload = {
+      type: 'messageUnPinned',
     };
     await this.broadcastToGroup('null', groupId, payload);
   }

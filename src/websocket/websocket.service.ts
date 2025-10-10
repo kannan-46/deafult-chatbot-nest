@@ -21,7 +21,7 @@ export class WebSocketService {
     });
   }
 
-  private async sendJson(connectionId: string, payload: any) {
+   async sendJson(connectionId: string, payload: any) {
     const data = Buffer.from(JSON.stringify(payload));
     await this.apiGatewayClient.send(
       new PostToConnectionCommand({ ConnectionId: connectionId, Data: data }),
@@ -80,7 +80,6 @@ export class WebSocketService {
   }
 
   async handleMessage(connectionId: string, body: any) {
-    
     try {
       const action = body?.action;
       switch (action) {
@@ -149,7 +148,7 @@ export class WebSocketService {
         case 'joinGroup': {
           const { userId, groupId } = body;
           if (userId && groupId) {
-            await this.groupChat.handleJoinGroup(userId, groupId);
+            await this.groupChat.handleJoinGroup(userId, groupId, connectionId);
           }
           return;
         }
@@ -216,6 +215,22 @@ export class WebSocketService {
               messageTimestamp,
               reaction,
             );
+          }
+          return;
+        }
+
+        case 'pinMessage': {
+          const { groupId, message } = body;
+          if (groupId && message) {
+            await this.groupChat.handlePinMessage(groupId, message);
+          }
+          return;
+        }
+
+        case 'unPinMessage': {
+          const { groupId } = body;
+          if (groupId) {
+            await this.groupChat.handleUnPinMessage(groupId);
           }
           return;
         }
