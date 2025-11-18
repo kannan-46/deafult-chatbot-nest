@@ -354,7 +354,9 @@ export class DynamoService {
         avatar: user.avatar,
         createdAt: new Date().toISOString(),
       },
+      
     });
+    console.log(command);
     await this.client.send(command);
   }
 
