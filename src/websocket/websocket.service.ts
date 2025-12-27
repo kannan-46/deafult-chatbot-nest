@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { DynamoService } from 'src/dynamo/dynamo.service'; // Use the central DynamoService
+import { DynamoService } from '../dynamo/dynamo.service'; // Use the central DynamoService
 import {
   ApiGatewayManagementApiClient,
   PostToConnectionCommand,
 } from '@aws-sdk/client-apigatewaymanagementapi';
-import { ChatService } from 'src/chat/chat.service';
-import { GroupChatService } from 'src/group-chat/group-chat.service';
+import { ChatService } from '../chat/chat.service';
+import { GroupChatService } from '../group-chat/group-chat.service';
 
 @Injectable()
 export class WebSocketService {
@@ -21,7 +21,7 @@ export class WebSocketService {
     });
   }
 
-   async sendJson(connectionId: string, payload: any) {
+  async sendJson(connectionId: string, payload: any) {
     const data = Buffer.from(JSON.stringify(payload));
     await this.apiGatewayClient.send(
       new PostToConnectionCommand({ ConnectionId: connectionId, Data: data }),
@@ -88,9 +88,9 @@ export class WebSocketService {
           const chat: any = body.chatId
             ? await this.dynamoService.getChat(userId, body.chatId)
             : await this.dynamoService.createChat(
-                userId,
-                body.title || 'new chat',
-              );
+              userId,
+              body.title || 'new chat',
+            );
           const messages = await this.dynamoService.getChatMessage(
             userId,
             chat.chatId,
@@ -235,10 +235,10 @@ export class WebSocketService {
           return;
         }
 
-        case 'markAsRead':{
-          const {userId,groupId,messageTimestamp}=body
-          if(userId&&groupId&&messageTimestamp){
-            await this.groupChat.handleMarkAsRead(userId,groupId,messageTimestamp)
+        case 'markAsRead': {
+          const { userId, groupId, messageTimestamp } = body
+          if (userId && groupId && messageTimestamp) {
+            await this.groupChat.handleMarkAsRead(userId, groupId, messageTimestamp)
           }
         }
         default: {

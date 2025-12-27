@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { UserController } from './user.controller';
-import { DynamoModule } from 'src/dynamo/dynamo.module';
+import { DynamoModule } from '../dynamo/dynamo.module';
 import { GeminiModule } from 'src/gemini/gemini.module';
 
 @Module({
   controllers: [UserController],
-  imports:[DynamoModule,GeminiModule],
+  imports: [DynamoModule, GeminiModule],
 
 })
-export class UserModule {}
+export class UserModule { }

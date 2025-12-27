@@ -6,8 +6,8 @@ import {
   GoogleSearchRetrieval,
 } from '@google/generative-ai';
 import { GoogleGenAI, GeneratedImage } from '@google/genai';
-import { DynamoService } from 'src/dynamo/dynamo.service';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { DynamoService } from '../dynamo/dynamo.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class GeminiService {
@@ -18,8 +18,14 @@ export class GeminiService {
     private readonly client: DynamoService,
     private readonly cloudinary: CloudinaryService,
   ) {
-    this.genAi = new GoogleGenerativeAI(process.env.GEMINI_API!);
-    this.imgAi = new GoogleGenAI({ apiKey: process.env.GEMINI_API! });
+    const apiKey = process.env.GEMINI_API;
+    if (!apiKey) {
+      console.error('FATAL: GEMINI_API environment variable is missing.');
+      // We don't throw here to allow NestJS to finish initialization so we can see other errors,
+      // but the service will fail when used.
+    }
+    this.genAi = new GoogleGenerativeAI(apiKey || 'MISSING_API_KEY');
+    this.imgAi = new GoogleGenAI({ apiKey: apiKey || 'MISSING_API_KEY' });
   }
 
   async *generateTextStream(
@@ -29,7 +35,7 @@ export class GeminiService {
     temperature: number,
     userId: string,
     webSearch: boolean,
-    systemInstructionOverride?: string, 
+    systemInstructionOverride?: string,
   ): AsyncGenerator<string> {
     try {
       let finalSystemInstruction = '';
@@ -40,7 +46,7 @@ export class GeminiService {
         finalSystemInstruction = userProfile?.botPersonality
           ? userProfile.botPersonality
           : `You are a friendly and helpful AI assistant named "Kannan's AI".`;
-        
+
         if (userProfile) {
           const nameLine = userProfile.name ? `- The user's name is "${userProfile.name}".` : '';
           const aboutLine = userProfile.about ? `- About the user: "${userProfile.about}".` : '';

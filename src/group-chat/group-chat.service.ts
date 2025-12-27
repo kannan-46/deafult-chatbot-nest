@@ -1,8 +1,7 @@
 // src/group-chat/group-chat.service.ts
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
-import { timestamp } from 'rxjs';
-import { DynamoService } from 'src/dynamo/dynamo.service';
-import { WebSocketService } from 'src/websocket/websocket.service';
+import { DynamoService } from '../dynamo/dynamo.service';
+import { WebSocketService } from '../websocket/websocket.service';
 
 @Injectable()
 export class GroupChatService {
@@ -10,7 +9,7 @@ export class GroupChatService {
     private readonly dynamo: DynamoService,
     @Inject(forwardRef(() => WebSocketService))
     private readonly ws: WebSocketService,
-  ) {}
+  ) { }
   private async broadcastToGroup(
     fromUserId: string,
     groupId: string,
@@ -169,15 +168,15 @@ export class GroupChatService {
     await this.broadcastToGroup('null', groupId, payload);
   }
 
-  async handleMarkAsRead(userId:string,groupId:string,messageTimestamp:string){
-    await this.dynamo.updateLastRead(userId,groupId,messageTimestamp)
-    const seenBy=await this.dynamo.seenBy(groupId,messageTimestamp)
-    const payload={
-      type:'readReceiptUpdate',
+  async handleMarkAsRead(userId: string, groupId: string, messageTimestamp: string) {
+    await this.dynamo.updateLastRead(userId, groupId, messageTimestamp)
+    const seenBy = await this.dynamo.seenBy(groupId, messageTimestamp)
+    const payload = {
+      type: 'readReceiptUpdate',
       groupId,
       messageTimestamp,
       seenBy
     }
-    await this.broadcastToGroup(userId,groupId,payload)
+    await this.broadcastToGroup(userId, groupId, payload)
   }
 }

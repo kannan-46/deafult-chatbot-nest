@@ -1,7 +1,7 @@
 // src/user/user.controller.ts
 
-import { Body, Controller, Param, Put, Get, Post, UseGuards, Req } from '@nestjs/common'; 
-import  { DynamoService,type userProfile} from 'src/dynamo/dynamo.service'; 
+import { Body, Controller, Param, Put, Get, Post, UseGuards, Req } from '@nestjs/common';
+import { DynamoService, type userProfile } from '../dynamo/dynamo.service';
 // import { GeminiService } from 'src/gemini/gemini.service';
 import type { Request } from 'express';
 
@@ -9,12 +9,12 @@ interface AuthenticatedRequest extends Request {
   auth: { userId: string };
 }
 
-@Controller('users') 
+@Controller('users')
 export class UserController {
   constructor(
     private readonly dynamoService: DynamoService,
     // private readonly geminiService: GeminiService, 
-  ) {}
+  ) { }
 
   @Get(':userId/profile')
   async getUserProfile(@Req() request: AuthenticatedRequest) {

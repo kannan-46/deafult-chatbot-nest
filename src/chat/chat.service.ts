@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Content } from '@google/generative-ai';
-import { DynamoService } from 'src/dynamo/dynamo.service';
-import { GeminiService } from 'src/gemini/gemini.service';
+import { DynamoService } from '../dynamo/dynamo.service';
+import { GeminiService } from '../gemini/gemini.service';
 
 @Injectable()
 export class ChatService {
   constructor(
     private readonly client: DynamoService,
     private readonly gemini: GeminiService,
-  ) {}
+  ) { }
 
   async createNewChat(userId: string, title?: string) {
     const chat = await this.client.createChat(userId, title || 'New Chat');
